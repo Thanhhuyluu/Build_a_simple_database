@@ -2,6 +2,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include "utils.h"
 
 typedef struct {
   char* buffer;
@@ -17,36 +18,60 @@ InputBuffer* new_input_buffer() {
   return input_buffer;
 }
 
+typedef	enum {
+	META_COMMAND_SUCCESS,
+	META_COMMAND_UNRECOGNIZED_COMMAND,
+} MetaCommandResult;
+
+typedef enum {
+	PREPARE_SUCCESS,
+	PREPARE_UNRECOGNIZED_STATEMENT
+} PrepareResult;
+
+typedef enum {
+	STATEMENT_INSERT,
+	STATEMENT_SELECT
+} StatementType;
+
+typedef struct {
+	StatementType type;
+} Statement;
+
+MetaCommandResult do_meta_command(InputBuffer* input_buffer) {
+	if(strcmp(input_buffer->buffer, ".exit") == 0) {
+		close_input_buffer(input_buffer);
+		exit(EXIT_SUCCESS);
+	} else {
+		return META_COMMAND_UNRECOGNIZED_COMMAND;
+	}
+}
+
+PrepareResult prepare_statement(InputBuffer* input_buffer, Statement* statement) {
+	if(strncmp(input_buffer->buffer, "insert", 6) == 0) {
+		statement->type = STATEMENT_INSERT;
+		return PREPARE_SUCCESS;
+	}else if(strncmp(input_buffer->buffer, "select", 6) == 0) {
+		statement->type = STATEMENT_SELECT;
+		return PREPARE_SUCCESS;
+	}
+	
+	return PREPARE_UNRECOGNIZED_STATEMENT;
+	
+}
+
+void execute_statement(Statement* statement) {
+	switch(statement->type) {
+		case STATEMENT_INSERT:
+			printf("Do insert statement.\n");
+			break;
+		case STATEMENT_SELECT:
+			printf("Do select statement.\n");
+			break;
+	}
+}
+
 void print_prompt() {
 	printf("db > "); 
-}
-ssize_t getline(char **lineptr, size_t *n, FILE *stream) {
-    size_t pos = 0;
-    int c;
-
-    if (*lineptr == NULL || *n == 0) {
-        *n = 128;  
-        *lineptr = malloc(*n);
-        if (*lineptr == NULL) return -1;
-    }
-
-    while ((c = fgetc(stream)) != EOF) {
-        if (pos + 1 >= *n) {
-            *n *= 2;
-            char *new_ptr = realloc(*lineptr, *n);
-            if (new_ptr == NULL) return -1;
-            *lineptr = new_ptr;
-        }
-
-        (*lineptr)[pos++] = c;
-
-        if (c == '\n') break;
-    }
-
-    if (pos == 0) return -1;
-
-    (*lineptr)[pos] = '\0';
-    return pos;
 }
 
 void read_input(InputBuffer* input_buffer) {
@@ -74,12 +99,25 @@ int main(int argc, char* argv[]) {
   while (true) {
     print_prompt();
     read_input(input_buffer);
-
-    if (strcmp(input_buffer->buffer, ".exit") == 0) {
-      close_input_buffer(input_buffer);
-      exit(EXIT_SUCCESS);
-    } else {
-      printf("Unrecognized command '%s'.\n", input_buffer->buffer);
-    }
+    
+    if(input_buffer->buffer[0] ==  '.') {
+    	switch(do_meta_command(input_buffer)) {
+    		case (META_COMMAND_SUCCESS):
+    			continue;
+    		case (META_COMMAND_UNRECOGNIZED_COMMAND):
+    			printf("Unrecognized command '%s'\n", input_buffer->buffer);
+    			continue;
+		}
+	}
+	Statement statement;
+	switch (prepare_statement(input_buffer, &statement)) {
+		case (PREPARE_SUCCESS):
+			break;
+		case (PREPARE_UNRECOGNIZED_STATEMENT):
+			printf("Unrecognized keyword at start of '%s'.\n", input_buffer->buffer);
+			continue;
+	}
+	execute_statement(&statement);
+	printf("Executed.\n");
   }
 }
