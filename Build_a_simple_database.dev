@@ -1,6 +1,6 @@
 [Project]
 filename=Build_a_simple_database.dev
-name=Build_a_simple_database
+name=Build_a_Simple_Database
 Type=1
 Ver=2
 ObjFiles=
@@ -12,7 +12,7 @@ MakeIncludes=
 Compiler=
 CppCompiler=
 Linker=
-IsCpp=1
+IsCpp=0
 Icon=
 ExeOutput=
 ObjectOutput=
